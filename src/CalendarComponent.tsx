@@ -5,13 +5,13 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 
-export default function CalendarComponent() {
-  const [value, setValue] = React.useState<Dayjs | null>(dayjs());
+export default function CalendarComponent({ selectedDateState }) {
+  const [selectedDate, _] = React.useState<Dayjs | null>(dayjs());
 
   return (
     <div>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DateCalendar showDaysOutsideCurrentMonth value={value} onChange={(newValue) => setValue(newValue)} />
+            <DateCalendar showDaysOutsideCurrentMonth value={selectedDate} onChange={(newValue) => { selectedDateState(newValue)}} />
         </LocalizationProvider>
     </div>
   );
