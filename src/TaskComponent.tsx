@@ -2,12 +2,8 @@ import dayjs from 'dayjs';
 import * as React from 'react';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Toolbar from '@mui/material/Toolbar';
@@ -19,50 +15,47 @@ import Tooltip from '@mui/material/Tooltip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
+import AddIcon from '@mui/icons-material/Add';
 import { visuallyHidden } from '@mui/utils';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 
 interface Data {
   id: number;
-  calories: number;
-  carbs: number;
-  fat: number;
-  name: string;
-  protein: number;
+  title: string;
+  stress: number;
+  relief: number;
+  mood: number;
 }
 
 function createData(
   id: number,
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
+  title: string,
+  stress: number,
+  relief: number,
+  mood: number
 ): Data {
   return {
-    id,
-    name,
-    calories,
-    fat,
-    carbs,
-    protein,
+    id, title, stress, relief, mood
   };
 }
 
-const rows = [
-  createData(1, 'Cupcake', 305, 3.7, 67, 4.3),
-  createData(2, 'Donut', 452, 25.0, 51, 4.9),
-  createData(3, 'Eclair', 262, 16.0, 24, 6.0),
-  createData(4, 'Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData(5, 'Gingerbread', 356, 16.0, 49, 3.9),
-  createData(6, 'Honeycomb', 408, 3.2, 87, 6.5),
-  createData(7, 'Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData(8, 'Jelly Bean', 375, 0.0, 94, 0.0),
-  createData(9, 'KitKat', 518, 26.0, 65, 7.0),
-  createData(10, 'Lollipop', 392, 0.2, 98, 0.0),
-  createData(11, 'Marshmallow', 318, 0, 81, 2.0),
-  createData(12, 'Nougat', 360, 19.0, 9, 37.0),
-  createData(13, 'Oreo', 437, 18.0, 63, 4.0),
+// replace the top-level `rows` and `addNewRow` with a stateful version:
+const initialRows: Data[] = [
+  createData(1, 'task 1', 305, 3.7, 67),
+  createData(2, 'ask 1', 452, 25.0, 51),
+  createData(3, 'ask 1', 262, 16.0, 24),
+  createData(4, 'ask 1', 159, 6.0, 24),
+  createData(5, 'ask ask 1', 356, 16.0, 49),
+  createData(6, 'ask 1', 408, 3.2, 87),
+  createData(7, 'ask 1', 237, 9.0, 37)
 ];
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -98,35 +91,29 @@ interface HeadCell {
 
 const headCells: readonly HeadCell[] = [
   {
-    id: 'name',
+    id: 'title',
     numeric: false,
     disablePadding: true,
-    label: 'Dessert (100g serving)',
+    label: 'Task',
   },
   {
-    id: 'calories',
+    id: 'stress',
     numeric: true,
     disablePadding: false,
-    label: 'Calories',
+    label: 'Stress Level',
   },
   {
-    id: 'fat',
+    id: 'relief',
     numeric: true,
     disablePadding: false,
-    label: 'Fat (g)',
+    label: 'Relief Level',
   },
   {
-    id: 'carbs',
+    id: 'mood',
     numeric: true,
     disablePadding: false,
-    label: 'Carbs (g)',
-  },
-  {
-    id: 'protein',
-    numeric: true,
-    disablePadding: false,
-    label: 'Protein (g)',
-  },
+    label: 'Mood',
+  }
 ];
 
 interface EnhancedTableProps {
@@ -187,9 +174,11 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 }
 interface EnhancedTableToolbarProps {
   numSelected: number;
+  selectedDate: dayjs.Dayjs;
+  onAddClick?: () => void; // added prop
 }
-function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { numSelected } = props;
+function EnhancedTableToolbar(props: EnhancedTableToolbarProps) { // This is the top bar under the date
+  const { numSelected, selectedDate, onAddClick } = props;
   return (
     <Toolbar
       sx={[
@@ -219,7 +208,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           id="tableTitle"
           component="div"
         >
-          Nutrition
+          {dayjs(selectedDate).format('YYYY-MM-DD')}
         </Typography>
       )}
       {numSelected > 0 ? (
@@ -229,9 +218,9 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           </IconButton>
         </Tooltip>
       ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <FilterListIcon />
+        <Tooltip title="Add new task">
+          <IconButton onClick={onAddClick}>
+            <AddIcon />
           </IconButton>
         </Tooltip>
       )}
@@ -240,11 +229,27 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 }
 export default function TaskComponent({selectedDate}) {
   const [order, setOrder] = React.useState<Order>('asc');
-  const [orderBy, setOrderBy] = React.useState<keyof Data>('calories');
+  const [orderBy, setOrderBy] = React.useState<keyof Data>('stress');
   const [selected, setSelected] = React.useState<readonly number[]>([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+  // dialog state for the add form
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const handleDialogOpen = () => setDialogOpen(true);
+  const handleDialogClose = () => setDialogOpen(false);
+  const [rows, setRows] = React.useState(initialRows);
+
+  const addNewRow = (payload?: { title?: string; stress?: number | string; relief?: number | string; mood?: number | string; }) => {
+    const newId = rows.length + 1;
+    const title = payload?.title ?? `New Task ${newId}`;
+    const stress = Number(payload?.stress ?? 0);
+    const relief = Number(payload?.relief ?? 0);
+    const mood = Number(payload?.mood ?? 0);
+    const newRow = createData(newId, title, stress, relief, mood);
+    setRows(prev => [...prev, newRow]);
+  };
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -305,90 +310,51 @@ export default function TaskComponent({selectedDate}) {
       [...rows]
         .sort(getComparator(order, orderBy))
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [order, orderBy, page, rowsPerPage],
+    [order, orderBy, page, rowsPerPage, rows],
   );
 
   return (
     <Box sx={{ width: '100%' }}>
-        <h3>{dayjs(selectedDate).format('YYYY-MM-DD')}</h3>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar numSelected={selected.length} />
-        <TableContainer>
-          <Table
-            sx={{ minWidth: 750 }}
-            aria-labelledby="tableTitle"
-            size={dense ? 'small' : 'medium'}
-          >
-            <EnhancedTableHead
-              numSelected={selected.length}
-              order={order}
-              orderBy={orderBy}
-              onSelectAllClick={handleSelectAllClick}
-              onRequestSort={handleRequestSort}
-              rowCount={rows.length}
-            />
-            <TableBody>
-              {visibleRows.map((row, index) => {
-                const isItemSelected = selected.includes(row.id);
-                const labelId = `enhanced-table-checkbox-${index}`;
+        <EnhancedTableToolbar numSelected={selected.length} selectedDate={selectedDate} onAddClick={handleDialogOpen} />
 
-                return (
-                  <TableRow
-                    hover
-                    onClick={(event) => handleClick(event, row.id)}
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    key={row.id}
-                    selected={isItemSelected}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        color="primary"
-                        checked={isItemSelected}
-                        inputProps={{
-                          'aria-labelledby': labelId,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell
-                      component="th"
-                      id={labelId}
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.calories}</TableCell>
-                    <TableCell align="right">{row.fat}</TableCell>
-                    <TableCell align="right">{row.carbs}</TableCell>
-                    <TableCell align="right">{row.protein}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {emptyRows > 0 && (
-                <TableRow
-                  style={{
-                    height: (dense ? 33 : 53) * emptyRows,
-                  }}
-                >
-                  <TableCell colSpan={6} />
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
+        {/* Replaced table with editable DataGrid */}
+        <div style={{ height: 420, width: '100%' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSize={rowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            onPageSizeChange={(newSize) => setRowsPerPage(newSize)}
+            checkboxSelection
+            disableSelectionOnClick
+            density={dense ? 'compact' : 'standard'}
+            onSelectionModelChange={(sel) => setSelected(sel as number[])}
+            onCellEditCommit={(params: any) => {
+               const id = Number(params.id);
+               const field = params.field;
+               const value = params.value;
+               setRows((prev) =>
+                 prev.map((r) =>
+                   r.id === id
+                     ? {
+                         ...r,
+                         [field]:
+                           field === 'title' ? String(value) : Number(value ?? 0),
+                       }
+                     : r,
+                 ),
+               );
+             }}
+            components={{ Toolbar: undefined }}
+          />
+        </div>
+        {/* DataGrid has built-in pagination handled above */}
       </Paper>
+
+      {/* controlled FormDialog rendered here */}
+      <FormDialog open={dialogOpen} onClose={handleDialogClose} onAdd={addNewRow} />
+
       <FormControlLabel
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
@@ -396,3 +362,86 @@ export default function TaskComponent({selectedDate}) {
     </Box>
   );
 }
+
+// Controlled FormDialog (accepts open & onClose)
+function FormDialog({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (payload: any) => void }) {
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const formJson = Object.fromEntries((formData as any).entries());
+    // pass parsed values to add function
+    onAdd({
+       title: formJson.title as string,
+       stress: formJson.stress ? Number(formJson.stress) : 0,
+       relief: formJson.relief ? Number(formJson.relief) : 0,
+       mood: formJson.mood ? Number(formJson.mood) : 0,
+     });
+     onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Add Task</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Enter task details.
+        </DialogContentText>
+        <form onSubmit={handleSubmit} id="task-form">
+          <TextField
+            autoFocus
+            required
+            margin="dense"
+            id="title"
+            name="title"
+            label="Task Title"
+            type="text"
+            fullWidth
+            variant="standard"
+          />
+          <TextField
+            margin="dense"
+            id="stress"
+            name="stress"
+            label="Stress Level"
+            type="number"
+            fullWidth
+            variant="standard"
+          />
+          <TextField
+            margin="dense"
+            id="relief"
+            name="relief"
+            label="Relief Level"
+            type="number"
+            fullWidth
+            variant="standard"
+          />
+          <TextField
+            margin="dense"
+            id="mood"
+            name="mood"
+            label="Mood"
+            type="number"
+            fullWidth
+            variant="standard"
+          />
+        </form>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        {/* submit the form; handleSubmit will call onAdd */}
+        <Button type="submit" form="task-form">Add</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// add columns definition (place close to the component or above return)
+const columns: GridColDef[] = [
+  { field: 'id', headerName: 'ID', width: 70, editable: false },
+  { field: 'title', headerName: 'Task', flex: 1, minWidth: 150, editable: true },
+  { field: 'stress', headerName: 'Stress Level', type: 'number', width: 140, editable: true },
+  { field: 'relief', headerName: 'Relief Level', type: 'number', width: 140, editable: true },
+  { field: 'mood', headerName: 'Mood', type: 'number', width: 110, editable: true },
+];
