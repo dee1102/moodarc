@@ -2,21 +2,15 @@ import dayjs from 'dayjs';
 import * as React from 'react';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
-import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { visuallyHidden } from '@mui/utils';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
@@ -49,134 +43,14 @@ function createData(
 
 // replace the top-level `rows` and `addNewRow` with a stateful version:
 const initialRows: Data[] = [
-  createData(1, 'task 1', 305, 3.7, 67),
-  createData(2, 'ask 1', 452, 25.0, 51),
-  createData(3, 'ask 1', 262, 16.0, 24),
-  createData(4, 'ask 1', 159, 6.0, 24),
-  createData(5, 'ask ask 1', 356, 16.0, 49),
-  createData(6, 'ask 1', 408, 3.2, 87),
-  createData(7, 'ask 1', 237, 9.0, 37)
 ];
 
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-type Order = 'asc' | 'desc';
-
-function getComparator<Key extends keyof any>(
-  order: Order,
-  orderBy: Key,
-): (
-  a: { [key in Key]: number | string },
-  b: { [key in Key]: number | string },
-) => number {
-  return order === 'desc'
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-interface HeadCell {
-  disablePadding: boolean;
-  id: keyof Data;
-  label: string;
-  numeric: boolean;
-}
-
-const headCells: readonly HeadCell[] = [
-  {
-    id: 'title',
-    numeric: false,
-    disablePadding: true,
-    label: 'Task',
-  },
-  {
-    id: 'stress',
-    numeric: true,
-    disablePadding: false,
-    label: 'Stress Level',
-  },
-  {
-    id: 'relief',
-    numeric: true,
-    disablePadding: false,
-    label: 'Relief Level',
-  },
-  {
-    id: 'mood',
-    numeric: true,
-    disablePadding: false,
-    label: 'Mood',
-  }
-];
-
-interface EnhancedTableProps {
-  numSelected: number;
-  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data) => void;
-  onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  order: Order;
-  orderBy: string;
-  rowCount: number;
-}
-
-function EnhancedTableHead(props: EnhancedTableProps) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
-    props;
-  const createSortHandler =
-    (property: keyof Data) => (event: React.MouseEvent<unknown>) => {
-      onRequestSort(event, property);
-    };
-
-  return (
-    <TableHead>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="primary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{
-              'aria-label': 'select all desserts',
-            }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
-            padding={headCell.disablePadding ? 'none' : 'normal'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
 interface EnhancedTableToolbarProps {
   numSelected: number;
   selectedDate: dayjs.Dayjs;
   onAddClick?: () => void; // added prop
 }
+
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) { // This is the top bar under the date
   const { numSelected, selectedDate, onAddClick } = props;
   return (
@@ -194,7 +68,6 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) { // This is the
     >
       {numSelected > 0 ? (
         <Typography
-          sx={{ flex: '1 1 100%' }}
           color="inherit"
           variant="subtitle1"
           component="div"
@@ -227,19 +100,42 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) { // This is the
     </Toolbar>
   );
 }
-export default function TaskComponent({selectedDate}) {
-  const [order, setOrder] = React.useState<Order>('asc');
-  const [orderBy, setOrderBy] = React.useState<keyof Data>('stress');
+
+export default function TaskComponent({selectedDate, tasksState}) {
   const [selected, setSelected] = React.useState<readonly number[]>([]);
-  const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rows, setRows] = React.useState(() => {
+    // load from localStorage based on selectedDate
+    const datesAndTasks = localStorage.getItem('datesAndTasks') ? JSON.parse(localStorage.getItem('datesAndTasks')!) : [];
+    const existingEntry = datesAndTasks.find((obj: any) => obj.date === selectedDate.format('YYYY-MM-DD'));
+    return existingEntry ? existingEntry.tasks : initialRows;
+  });
 
   // dialog state for the add form
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const handleDialogOpen = () => setDialogOpen(true);
   const handleDialogClose = () => setDialogOpen(false);
-  const [rows, setRows] = React.useState(initialRows);
+
+  React.useEffect(() => {
+      var datesAndTasks = localStorage.getItem('datesAndTasks') ? JSON.parse(localStorage.getItem('datesAndTasks')!) : [];
+      const existingEntryIndex = datesAndTasks.findIndex((obj: any) => obj.date === selectedDate.format('YYYY-MM-DD'));
+      if (existingEntryIndex !== -1) {
+          // Update existing entry
+          datesAndTasks[existingEntryIndex].tasks = rows;
+      } else {
+          // Add new entry
+          datesAndTasks.push({ date: selectedDate.format('YYYY-MM-DD'), tasks: rows });
+      }
+      localStorage.setItem('datesAndTasks', JSON.stringify(datesAndTasks));
+  }, [rows]);
+
+  React.useEffect(() => {
+      // load tasks for the new selectedDate
+      var datesAndTasks = localStorage.getItem('datesAndTasks') ? JSON.parse(localStorage.getItem('datesAndTasks')!) : [];
+      const existingEntry = datesAndTasks.find((obj: any) => obj.date === selectedDate.format('YYYY-MM-DD'));
+      setRows(existingEntry ? existingEntry.tasks : initialRows);
+  }, [selectedDate]);
 
   const addNewRow = (payload?: { title?: string; stress?: number | string; relief?: number | string; mood?: number | string; }) => {
     const newId = rows.length + 1;
@@ -248,78 +144,22 @@ export default function TaskComponent({selectedDate}) {
     const relief = Number(payload?.relief ?? 0);
     const mood = Number(payload?.mood ?? 0);
     const newRow = createData(newId, title, stress, relief, mood);
-    setRows(prev => [...prev, newRow]);
-  };
-
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: keyof Data,
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      const newSelected = rows.map((n) => n.id);
-      setSelected(newSelected);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1),
-      );
-    }
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    const updatedRows = [...rows, newRow];
+    setRows(updatedRows);
+    tasksState(rows); // update parent state
   };
 
   const handleChangeDense = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDense(event.target.checked);
   };
 
-  // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
-  const visibleRows = React.useMemo(
-    () =>
-      [...rows]
-        .sort(getComparator(order, orderBy))
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [order, orderBy, page, rowsPerPage, rows],
-  );
-
   return (
-    <Box sx={{ width: '100%' }}>
-      <Paper sx={{ width: '100%', mb: 2 }}>
+    <Box>
+      <Paper>
         <EnhancedTableToolbar numSelected={selected.length} selectedDate={selectedDate} onAddClick={handleDialogOpen} />
 
         {/* Replaced table with editable DataGrid */}
-        <div style={{ height: 420, width: '100%' }}>
+        <div>
           <DataGrid
             rows={rows}
             columns={columns}
@@ -329,23 +169,16 @@ export default function TaskComponent({selectedDate}) {
             checkboxSelection
             disableSelectionOnClick
             density={dense ? 'compact' : 'standard'}
-            onSelectionModelChange={(sel) => setSelected(sel as number[])}
-            onCellEditCommit={(params: any) => {
-               const id = Number(params.id);
-               const field = params.field;
-               const value = params.value;
-               setRows((prev) =>
-                 prev.map((r) =>
-                   r.id === id
-                     ? {
-                         ...r,
-                         [field]:
-                           field === 'title' ? String(value) : Number(value ?? 0),
-                       }
-                     : r,
-                 ),
-               );
-             }}
+            // onSelectionModelChange={(sel) => setSelected(sel as number[])}
+            processRowUpdate={async (newRow, oldRow) => {
+              console.log(newRow);
+              rows.find((r) => r.id === newRow.id)!.title = newRow.title;
+              rows.find((r) => r.id === newRow.id)!.stress = newRow.stress;
+              rows.find((r) => r.id === newRow.id)!.relief = newRow.relief;
+              rows.find((r) => r.id === newRow.id)!.mood = newRow.mood;
+              setRows([...rows]);
+              tasksState(rows);
+            }}
             components={{ Toolbar: undefined }}
           />
         </div>
